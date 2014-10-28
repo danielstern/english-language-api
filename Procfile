@@ -1,1 +1,1 @@
-web: node index.js 3000
+web: node server.js	
