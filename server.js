@@ -130,6 +130,6 @@ http.createServer(function(request, response) {
 
     setTimeout(function() {
         response.end();
-    }, 5000);
+    }, 1000);
 
 }).listen(port);
