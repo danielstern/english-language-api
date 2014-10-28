@@ -116,7 +116,7 @@ http.createServer(function(request, response) {
 
             try {
                  response.write(JSON.stringify(orderlyResponse));
-            } catch () {
+            } catch (e) {
                  response.write("Error, Will Robinson...");
 
             }
