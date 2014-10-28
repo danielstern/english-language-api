@@ -16,6 +16,10 @@ http.createServer(function(request, response) {
     var urbanComplete = false;
     var wikiComplete = false;
     var wikipediaResponse = '';
+
+    var wiktionaryComplete = false;
+    var wiktionaryResponse = '';
+
     var localResponse = '';
 
     if (!query.word) {
@@ -23,7 +27,6 @@ http.createServer(function(request, response) {
         response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
         response.write("<p>Set raw to true to return raw data gathered instead of transformed data</p>");
         response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
-        // response.write()
         response.end();
 
     }
@@ -33,12 +36,29 @@ http.createServer(function(request, response) {
 
     if (query.word) {
         var _word = query.word;
+
+        http.get("http://en.wiktionary.org/w/index.php?title="+_word+"&action=raw&format=json", function(_response) {
+            // response.write(body);
+            _response.on('data', function(chunk) {
+                wiktionaryResponse += chunk;
+            });
+
+            _response.on('error', function(err) {
+                wiktionaryComplete = true;
+                // response.write(err);
+            })
+
+            _response.on('end', function(error, data, body) {
+                wiktionaryComplete = true;
+                // response.write(body);
+
+            })
+        });
+
         http.get("http://api.urbandictionary.com/v0/define?term=" + _word, function(urbanResponse) {
             // response.write(body);
             urbanResponse.on('data', function(chunk) {
                 urbanDictionaryResponse += chunk;
-
-                // response.write(chunk);
             });
 
             urbanResponse.on('error', function(err) {
@@ -79,10 +99,11 @@ http.createServer(function(request, response) {
     }
 
     setInterval(function() {
-        if (urbanComplete && wikiComplete) {
+        if (urbanComplete && wikiComplete && wiktionaryComplete) {
             var data = {
                 urbanDictionary: JSON.parse(urbanDictionaryResponse),
                 wikipedia: JSON.parse(wikipediaResponse),
+                wiktionairy: wiktionaryResponse,
                 local: localResponse
             };
 
@@ -114,7 +135,7 @@ http.createServer(function(request, response) {
             }
 
             try {
-                if (query.raw === true) {
+                if (query.raw) {
 
                     response.write(JSON.stringify(standardResponse));
                 } else {
@@ -130,6 +151,6 @@ http.createServer(function(request, response) {
 
     setTimeout(function() {
         response.end();
-    }, 1000);
+    }, 2500);
 
 }).listen(port);
