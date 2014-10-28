@@ -1,5 +1,4 @@
 var http = require('http'),
-    dictionary = require('./data/dictionary.json'),
     sys = require("sys");
 
 
@@ -20,91 +19,66 @@ http.createServer(function(request, response) {
     var wiktionaryComplete = false;
     var wiktionaryResponse = '';
 
-    var localResponse = '';
-
     if (!query.word) {
         response.write("<h1>Welcome to The English Language API!</h1>");
         response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
         response.write("<p>Set raw to true to return raw data gathered instead of transformed data</p>");
         response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
         response.end();
-
     }
-
-
-
 
     if (query.word) {
         var _word = query.word;
 
         http.get("http://en.wiktionary.org/w/index.php?title="+_word+"&action=raw&format=json", function(_response) {
-            // response.write(body);
             _response.on('data', function(chunk) {
                 wiktionaryResponse += chunk;
             });
 
             _response.on('error', function(err) {
                 wiktionaryComplete = true;
-                // response.write(err);
             })
 
             _response.on('end', function(error, data, body) {
                 wiktionaryComplete = true;
-                // response.write(body);
-
             })
         });
 
         http.get("http://api.urbandictionary.com/v0/define?term=" + _word, function(urbanResponse) {
-            // response.write(body);
             urbanResponse.on('data', function(chunk) {
                 urbanDictionaryResponse += chunk;
             });
 
             urbanResponse.on('error', function(err) {
                 urbanComplete = true;
-                // response.write(err);
             })
 
             urbanResponse.on('end', function(error, data, body) {
                 urbanComplete = true;
-                // response.write(body);
-
             })
         });
 
-        http.get('http://en.wikipedia.org/w/api.php?format=json&action=query&titles=' + _word + '&prop=revisions&rvprop=content&contentModel=html', function(wikiResponse) {
-            // response.write(body);
+        http.get('http://en.wikipedia.org/wiki/'+_word+'?action=raw', function(wikiResponse) {
             wikiResponse.on('data', function(chunk) {
                 wikipediaResponse += chunk;
-
-                // response.write(chunk);
             });
 
             wikiResponse.on('error', function(err) {
                 wikiComplete = true;
-                // response.write(err);
             })
 
             wikiResponse.on('end', function(data) {
                 wikiComplete = true;
-                // wikipediaResponse = data;
             })
         });
-        // var 
-        var word = dictionary[_word] || dictionary[_word.toUpperCase()] || "";
-        if (word) {
-            localResponse = word;
-        }
     }
 
     setInterval(function() {
         if (urbanComplete && wikiComplete && wiktionaryComplete) {
             var data = {
                 urbanDictionary: JSON.parse(urbanDictionaryResponse),
-                wikipedia: JSON.parse(wikipediaResponse),
+                wikipedia: wikipediaResponse,
                 wiktionairy: wiktionaryResponse,
-                local: localResponse
             };
 
             response.writeHead(200, {
@@ -115,19 +89,11 @@ http.createServer(function(request, response) {
 
             var wikiDefinitions = [];
 
-            var wikiPages = JSON.parse(wikipediaResponse).query.pages;
-            for (var key in wikiPages) {
-                if (wikiPages[key].revisions) {
-                    var content = wikiPages[key].revisions[0]['*'];
-                    wikiDefinitions.push(content);
-                }
-            }
-
             var standardResponse = data;
             var orderlyResponse = {
                 definitions: JSON.parse(urbanDictionaryResponse).list.map(function(def) {
                     return def.definition;
-                }).concat(wikiDefinitions),
+                }).push(wikipediaResponse),
                 synonyms: JSON.parse(urbanDictionaryResponse).tags,
                 examples: JSON.parse(urbanDictionaryResponse).list.map(function(entry) {
                     return entry.example
