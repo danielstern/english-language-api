@@ -10,7 +10,7 @@ Currently uses,
 
 Deployment
 ---------
-Run `node server.js` and got to localhost:3000
+Run `node server.js` and got to `localhost:3000`
 
 Usage
 -----
