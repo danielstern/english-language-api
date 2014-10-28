@@ -114,8 +114,12 @@ http.createServer(function(request, response) {
             }
 
 
+            try {
+                 response.write(JSON.stringify(orderlyResponse));
+            } catch () {
+                 response.write("Error, Will Robinson...");
 
-            response.write(JSON.stringify(orderlyResponse));
+            }
             response.end();
         }
     }, 25);
