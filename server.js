@@ -2,133 +2,134 @@ var http = require('http'),
     dictionary = require('./data/dictionary.json'),
     sys = require("sys");
 
-wiky = require("wiky.js")
-
-
 
 var port = Number(process.env.PORT || 3000);
 
 http.createServer(function(request, response) {
 
-            var url = require("url");
+    var url = require("url");
 
-            var url_parts = url.parse(request.url, true);
-            var query = url_parts.query;
+    var url_parts = url.parse(request.url, true);
+    var query = url_parts.query;
 
-            var urbanDictionaryResponse = '';
-            var urbanComplete = false;
-            var wikiComplete = false;
-            var wikipediaResponse = '';
-            var localResponse = '';
+    var urbanDictionaryResponse = '';
+    var urbanComplete = false;
+    var wikiComplete = false;
+    var wikipediaResponse = '';
+    var localResponse = '';
 
-            if (!query.word) {
-                response.write("<h1>Welcome to The English Language API!</h1>");
-                response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
-                response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
-                // response.write()
-                response.end();
+    if (!query.word) {
+        response.write("<h1>Welcome to The English Language API!</h1>");
+        response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
+        response.write("<p>Set raw to true to return raw data gathered instead of transformed data</p>");
+        response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
+        // response.write()
+        response.end();
 
-            }
+    }
 
 
 
 
-            if (query.word) {
-                var _word = query.word;
-                http.get("http://api.urbandictionary.com/v0/define?term=" + _word, function(urbanResponse) {
-                    // response.write(body);
-                    urbanResponse.on('data', function(chunk) {
-                        urbanDictionaryResponse += chunk;
+    if (query.word) {
+        var _word = query.word;
+        http.get("http://api.urbandictionary.com/v0/define?term=" + _word, function(urbanResponse) {
+            // response.write(body);
+            urbanResponse.on('data', function(chunk) {
+                urbanDictionaryResponse += chunk;
 
-                        // response.write(chunk);
-                    });
+                // response.write(chunk);
+            });
 
-                    urbanResponse.on('error', function(err) {
-                        urbanComplete = true;
-                        // response.write(err);
-                    })
+            urbanResponse.on('error', function(err) {
+                urbanComplete = true;
+                // response.write(err);
+            })
 
-                    urbanResponse.on('end', function(error, data, body) {
-                        urbanComplete = true;
-                        // response.write(body);
+            urbanResponse.on('end', function(error, data, body) {
+                urbanComplete = true;
+                // response.write(body);
 
-                    })
-                });
+            })
+        });
 
-                http.get('http://en.wikipedia.org/w/api.php?format=json&action=query&titles=' + _word + '&prop=revisions&rvprop=content&contentModel=html', function(wikiResponse) {
-                    // response.write(body);
-                    wikiResponse.on('data', function(chunk) {
-                        wikipediaResponse += chunk;
+        http.get('http://en.wikipedia.org/w/api.php?format=json&action=query&titles=' + _word + '&prop=revisions&rvprop=content&contentModel=html', function(wikiResponse) {
+            // response.write(body);
+            wikiResponse.on('data', function(chunk) {
+                wikipediaResponse += chunk;
 
-                        // response.write(chunk);
-                    });
+                // response.write(chunk);
+            });
 
-                    wikiResponse.on('error', function(err) {
-                        wikiComplete = true;
-                        // response.write(err);
-                    })
+            wikiResponse.on('error', function(err) {
+                wikiComplete = true;
+                // response.write(err);
+            })
 
-                    wikiResponse.on('end', function(data) {
-                        wikiComplete = true;
-                        // wikipediaResponse = data;
-                    })
-                });
-                // var 
-                var word = dictionary[_word] || dictionary[_word.toUpperCase()] || "";
-                if (word) {
-                    // localResponse = JSON.stringify({
-                    //       definition:word
-                    // });
-                    localResponse = word;
-                    // response.write(word);
+            wikiResponse.on('end', function(data) {
+                wikiComplete = true;
+                // wikipediaResponse = data;
+            })
+        });
+        // var 
+        var word = dictionary[_word] || dictionary[_word.toUpperCase()] || "";
+        if (word) {
+            localResponse = word;
+        }
+    }
+
+    setInterval(function() {
+        if (urbanComplete && wikiComplete) {
+            var data = {
+                urbanDictionary: JSON.parse(urbanDictionaryResponse),
+                wikipedia: JSON.parse(wikipediaResponse),
+                local: localResponse
+            };
+
+            response.writeHead(200, {
+                'Content-Type': 'text/json',
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type"
+            });
+
+            var wikiDefinitions = [];
+
+            var wikiPages = JSON.parse(wikipediaResponse).query.pages;
+            for (var key in wikiPages) {
+                if (wikiPages[key].revisions) {
+                    var content = wikiPages[key].revisions[0]['*'];
+                    wikiDefinitions.push(content);
                 }
             }
 
-            setInterval(function() {
-                    if (urbanComplete && wikiComplete) {
-                        var data = {
-                            urbanDictionary: JSON.parse(urbanDictionaryResponse),
-                            wikipedia: JSON.parse(wikipediaResponse),
-                            local: localResponse
-                        };
+            var standardResponse = data;
+            var orderlyResponse = {
+                definitions: JSON.parse(urbanDictionaryResponse).list.map(function(def) {
+                    return def.definition;
+                }).concat(wikiDefinitions),
+                synonyms: JSON.parse(urbanDictionaryResponse).tags,
+                examples: JSON.parse(urbanDictionaryResponse).list.map(function(entry) {
+                    return entry.example
+                })
+            }
 
-                        response.writeHead(200, {
-                            'Content-Type': 'text/json'
-                        });
+            try {
+                if (query.raw === true) {
 
-                        var wikiDefinitions = [];
+                    response.write(JSON.stringify(standardResponse));
+                } else {
+                    response.write(JSON.stringify(orderlyResponse));
+                }
+            } catch (e) {
+                response.write("Error, Will Robinson...");
 
-                        var wikiPages = JSON.parse(wikipediaResponse).query.pages;
-                        for (var key in wikiPages) {
-                            if (wikiPages[key].revisions) {
+            }
+            response.end();
+        }
+    }, 25);
 
-                                    var content = wikiPages[key].revisions[0]['*'];
-                                    // wikiDefinitions.push(content);
-                                    wikiDefinitions.push(wiky.process(content, {}));
-                                }
-                            }
+    setTimeout(function() {
+        response.end();
+    }, 5000);
 
-                            var standardResponse = data;
-                            var orderlyResponse = {
-                                definitions: JSON.parse(urbanDictionaryResponse).list.map(function(def) {
-                                        return def.definition;
-                                    }).concat(wikiDefinitions)
-                                    // }).concat(JSON.parse(wikipediaResponse))
-                            }
-
-
-                            try {
-                                response.write(JSON.stringify(orderlyResponse));
-                            } catch (e) {
-                                response.write("Error, Will Robinson...");
-
-                            }
-                            response.end();
-                        }
-                    }, 25);
-
-                setTimeout(function() {
-                    response.end();
-                }, 5000);
-
-            }).listen(port);
+}).listen(port);
