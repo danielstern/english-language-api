@@ -1,5 +1,7 @@
 var http = require('http'),
-    sys = require("sys");
+    sys = require("sys"),
+    fs = require("fs"),
+    index = fs.readFileSync('app/index.html');
 
 
 var port = Number(process.env.PORT || 3000);
@@ -20,17 +22,18 @@ http.createServer(function(request, response) {
     var wiktionaryResponse = '';
 
     if (!query.word) {
-        response.write("<h1>Welcome to The English Language API!</h1>");
-        response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
-        response.write("<p>Set raw to true to return raw data gathered instead of transformed data</p>");
-        response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
+        response.writeHead(200, {
+            'Content-Type': 'text/html',
+        });
+
+        response.write(index);
         response.end();
     }
 
     if (query.word) {
         var _word = query.word;
 
-        http.get("http://en.wiktionary.org/w/index.php?title="+_word+"&action=raw&format=json", function(_response) {
+        http.get("http://en.wiktionary.org/w/index.php?title=" + _word + "&action=raw&format=json", function(_response) {
             _response.on('data', function(chunk) {
                 wiktionaryResponse += chunk;
             });
@@ -58,7 +61,7 @@ http.createServer(function(request, response) {
             })
         });
 
-        http.get('http://en.wikipedia.org/wiki/'+_word+'?action=raw', function(wikiResponse) {
+        http.get('http://en.wikipedia.org/wiki/' + _word + '?action=raw', function(wikiResponse) {
             wikiResponse.on('data', function(chunk) {
                 wikipediaResponse += chunk;
             });
