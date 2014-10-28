@@ -16,4 +16,7 @@ Access the endpoint with the following GET paramaters,
 Specifices the word or phrase you wish to get defined.
 Example: `https://english-language-api.herokuapp.com/?word=adventure time`
 
+###`raw`
+If true, returns the raw data that it has gathered from its various sources, and not the expected format. 
+Example: `https://english-language-api.herokuapp.com/?word=adventure time&raw=true`
 
