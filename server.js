@@ -16,6 +16,21 @@ http.createServer(function(request, response) {
     var wikipediaResponse = '';
     var localResponse = '';
 
+    if (!query.word) {
+      response.write("<h1>Welcome to The English Language API!</h1>");
+      response.write("<p>To look up any word, go to this url with the paramater word= and the word you want.</p>");
+      response.write('<form action="/" autocomplete="on">  Word: <input name="word" autocomplete="on"><br> <input type="submit"></form>');
+      // response.write()
+      response.end();
+
+    }
+
+    if (query.format===1||'clean') {
+
+    } else {
+
+    }
+
     response.writeHead(200, {
         'Content-Type': 'text/plain'
     });
@@ -69,11 +84,6 @@ http.createServer(function(request, response) {
             localResponse = word;
             // response.write(word);
         }
-    } else {
-        // response.write(JSON.stringify(dictionary));
-        response.write("<h1>Welcome to The English Language API!</h1>");
-        response.write("To look up any word, go to this url with the paramater word= and the word you want.");
-        response.end();
     }
 
     setInterval(function() {
