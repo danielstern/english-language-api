@@ -100,7 +100,7 @@ http.createServer(function(request, response) {
 
                         var wikiPages = JSON.parse(wikipediaResponse).query.pages;
                         for (var key in wikiPages) {
-                            if (wikiPages[key] {
+                            if (wikiPages[key].revisions) {
 
                                     var content = wikiPages[key].revisions[0]['*'];
                                     // wikiDefinitions.push(content);
