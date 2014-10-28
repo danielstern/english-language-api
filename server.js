@@ -23,7 +23,7 @@ http.createServer(function(request, response) {
 
     if (!query.word) {
         response.writeHead(200, {
-            'Content-Type': 'text/html',
+            'Content-Type': 'text',
         });
 
         response.write(index);
