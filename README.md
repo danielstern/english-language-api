@@ -8,6 +8,10 @@ Currently uses,
 - Wiktionary
 - Urban Dictionary
 
+Deployment
+---------
+Run `node server.js` and got to localhost:3000
+
 Usage
 -----
 Access the endpoint with the following GET paramaters,
